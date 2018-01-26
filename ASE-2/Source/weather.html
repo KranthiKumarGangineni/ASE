@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>ASE ICP-2</title>
+    <!-- Required Imports -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.1.1/angular.min.js"></script>
+</head>
+<style>
+    .weatherInfo {
+        background: aliceblue;
+        height: auto;
+        width: auto;
+        border: 1px dashed #ccc;
+        padding: 1em;
+        align: center;
+    }
+
+    .error {
+        color: #FF0000;
+    }
+
+    .background {
+        background-color: ghostwhite;
+    }
+</style>
+<script>
+    // When Show Weather is clicked
+    angular.module('weatherdetails', [])
+        .controller('weathercontroller', function($scope, $http) {
+
+            $scope.getWeatherDetails = function() {
+                var state = $scope.stateCode;
+                var city = $scope.cityName;
+
+                // Hiding the Errors,Weather first
+
+                $("#cityError").hide();
+                $("#stateCodeError").hide();
+                $("#weatherError").hide();
+                $('.weatherInfo').hide();
+
+                var errorPresent = false;
+
+                // Validating City, State values.
+                if (city == null || $.trim(city) == '') {
+                    errorPresent = true;
+                    // Show Error if City is Null/Empty
+                    $("#cityError").show();
+                }
+                if (state == null || $.trim(state) == '') {
+                    errorPresent = true;
+                    // Show Error if State is Null/Empty
+                    $("#stateCodeError").show();
+                }
+
+                // Return false if error present as it will stop next step.
+                if (errorPresent) {
+                    return false;
+                }
+
+                $http.get('https://api.wunderground.com/api/4bbbc25f4f5946dd/conditions/q/' + state + '/' + city + '.json').success(function(data) {
+
+                    // Throwing a message if no weather records are found
+                    if (data.current_observation == null) {
+                        $("#weatherError").show();
+                        return false;
+                    }
+
+                    console.log(state + " ->" + city);
+                    console.log(data);
+                    temperature = data.current_observation.temp_f;
+                    feelslike_temp = data.current_observation.feelslike_f;
+                    celsius = data.current_observation.temp_c;
+                    feelslike_celsius = data.current_observation.feelslike_c;
+                    icon = data.current_observation.icon_url;
+                    weather = data.current_observation.weather;
+                    wind = data.current_observation.wind_string;
+                    pressure_mb = data.current_observation.pressure_mb;
+                    humidity = data.current_observation.relative_humidity;
+                    $scope.presentweather = {
+                        html: "Current temperature is " + temperature + " &deg; F ( " + celsius + " &deg; C ) and " + weather + " but feels like " + feelslike_temp + " &deg; F ( " + feelslike_celsius + " &deg; C ) with wind : " + wind + " and pressure at sea level is : " + pressure_mb + " millibars " + " having a relative humidity of " + humidity + ""
+                    }
+                    $scope.weatherImage = {
+                        html: "<img src='" + icon + "'/>"
+                    }
+                    // Showing Weather Details
+                    $('.weatherInfo').show();
+                })
+            }
+
+        });
+</script>
+
+<body class="background">
+<h2 align="center">Weather Details</h2>
+<div ng-app="weatherdetails" ng-controller="weathercontroller" align="center">
+    <label>State Code : </label>
+    <input type="text" ng-model="stateCode" />
+    <label> City : </label>
+    <input type="text" ng-model="cityName" />
+    <button ng-click="getWeatherDetails()"> Show Weather </button>
+    <br/>
+    <br/>
+    <!-- Hiding the errors first using Style display:none-->
+    <p class="error" id="stateCodeError" style="display: none">State Code cannot be empty</p>
+    <p class="error" id="cityError" style="display: none">City cannot be empty</p>
+    <p class="error" id="weatherError" style="display: none">No weather details found for the input parameters</p>
+    <br/>
+    <br/>
+    <div class="weatherInfo" style="display: none">
+        <p class="weatherConditions" ng-bind-html-unsafe="presentweather.html"></p>
+        <div class="weatherIcon" ng-bind-html-unsafe="weatherImage.html"></div>
+    </div>
+</div>
+</body>
