@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edamam Recipe</title>
+
+    <!-- Required Imports -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.1.1/angular.min.js"></script>
+    <!-- Required Import for Data Binding -->
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.1.1/angular-sanitize.js"></script>
+    <!-- For Responsive Voice -->
+    <script src="https://code.responsivevoice.org/responsivevoice.js"></script>
+
+</head>
+
+<style>
+
+    .error {
+        color: #FF0000;
+    }
+
+    .speech{
+        text-decoration: none !important;
+    }
+
+    .nutrition {
+        background-color: #008CBA;
+    }
+
+    table, th, td {
+        border: 2px solid black;
+        border-collapse: collapse;
+        align : center;
+    }
+
+</style>
+
+<script>
+
+    // When Show Nutrition Details is clicked
+    angular.module('nutritionDetails', ['ngSanitize'])
+        .controller('nutritionController', function($scope, $http) {
+
+            $scope.getNutritionDetails = function() {
+                var ingredientText = $scope.ingredient;
+
+                // Hiding the Errors, TextToSpeech Button, Table data first
+
+                $("#ingredientEmpty").hide();
+                $("#nutritionError").hide();
+                $("#text2speech").hide();
+                $("#nutritionData").hide();
+
+                // Validating ingredient text value.
+                if (ingredientText == null || $.trim(ingredientText) == '') {
+                    // Show Error if ingredientText Input is Null/Empty
+                    $("#ingredientEmpty").show();
+                    return false;
+                }
+
+                $http.get('https://api.edamam.com/api/nutrition-data?app_id=d963272d&app_key=2660fc8185ccc53915299519a4ad12ab&ingr='+ingredientText).success(function(data) {
+
+                    // Throwing a message if no nutrition records are found
+                    console.log(data);
+                    if (data.error != null || (data.calories == 0 && data.totalWeight == 0.0)) {
+                        $scope.nutritionIssue = "No nutrition details are present for input text : "+ingredientText;
+                        $("#nutritionError").show();
+                        return false;
+                    }
+                    // Show data if no errors
+                    calories = data.calories;
+                    totalWeight = data.totalWeight;
+                    var text = ingredientText+" has "+ calories + " calories "+ " and total weight is "+ totalWeight;
+                    healthLabels = data.healthLabels.toString();
+                    if(healthLabels != null && $.trim(healthLabels) != '') {
+                        replacedHealthLabels = healthLabels.replace(/\,/g,' and ');
+                        text = text + " having health labels are " + replacedHealthLabels;
+                    }
+                    dietLabels = data.dietLabels.toString();
+                    if(dietLabels != null && $.trim(dietLabels) != '') {
+                        replacedDietLabels = dietLabels.replace(/\,/g,' and ');
+                        text = text + " and diet labels are " + replacedDietLabels;
+                    }
+                    $scope.nutritionfetched = {
+                        html: "<td>" + calories + "</td>" +
+                              "<td>" + totalWeight + "</td>" +
+                              "<td>" + healthLabels + "</td>" +
+                              "<td>" + dietLabels + "</td>"
+                    }
+                    // Forming Watson URL
+                    var refUrl = "http://stream.watsonplatform.net/text-to-speech/api/v1/synthesize?username=c59baf1e-702c-47cb-8afe-017dcea5c957&password=2enOzfkpisQe&text="+text;
+                    $("#text2speech").attr('href',refUrl);
+                    $("#nutritionData").show();
+                    $("#text2speech").show();
+                })
+            }
+
+        });
+
+</script>
+
+
+<body class="background">
+<h2 align="center">Nutrition Details</h2>
+<div ng-app="nutritionDetails" ng-controller="nutritionController" align="center">
+    <label>Enter Ingredient to get nutrition Details : </label>
+    <input type="text" ng-model="ingredient" />
+    <button class="nutrition" ng-click="getNutritionDetails()"> Show Nutrition Details </button>
+    <br/>
+    <br/>
+    <!-- Show Data inside a Table -->
+    <table id="nutritionData" style="display: none">
+        <tr>
+            <th>Calories</th>
+            <th>Total Weight</th>
+            <th>Health Labels</th>
+            <th>Diet Labels</th>
+        </tr>
+        <tr class="nutritionfetched" ng-bind-html-unsafe="nutritionfetched.html"></tr>
+    </table>
+    <br/>
+    <br/>
+    <!-- Text to Speech -->
+    <a id="text2speech" class="speech" type="button" style="display: none">🔊 Text to Speech</a>
+    <!-- Hiding the errors first using Style display:none-->
+    <p class="error" id="ingredientEmpty" style="display: none">Ingredient should not be empty</p>
+    <p class="error" ng-bind-html="nutritionIssue" id="nutritionError" style="display: none"></p>
+    <br/>
+    <br/>
+</div>
+</body>
+</html>
