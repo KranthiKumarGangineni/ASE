@@ -1,0 +1,8 @@
+{
+  "name": "loginandregister",
+  "app_id": "a4a88dea",
+  "type": "ionic-angular",
+  "integrations": {
+    "cordova": {}
+  }
+}
